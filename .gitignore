@@ -1,0 +1,22 @@
+.vibecode-backup*/
+
+# .NET
+bin/
+obj/
+*.user
+
+# Node / Vite
+node_modules/
+dist/
+.vite/
+
+# Env & secrets
+.env
+
+# IDE
+.vs/
+.idea/
+*.swp
+
+# Logs
+*.log
