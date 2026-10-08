@@ -33,7 +33,8 @@ const staffNav: NavItem[] = [
   { label: 'Hoá đơn', icon: 'pi pi-receipt', name: 'invoices' }
 ]
 const managerOnlyNav: NavItem[] = [
-  { label: 'Người dùng', icon: 'pi pi-users', name: 'users' }
+  { label: 'Người dùng', icon: 'pi pi-users', name: 'users' },
+  { label: 'Nhật ký', icon: 'pi pi-history', name: 'audit-logs' }
 ]
 // Menu khách thuê (Tenant).
 const tenantNav: NavItem[] = [

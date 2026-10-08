@@ -22,10 +22,18 @@ public static class DependencyInjection
         // ---- Bind cấu hình dùng ở tầng Infrastructure ----
         services.Configure<JwtSettings>(configuration.GetSection("Jwt"));
         services.Configure<MinioSettings>(configuration.GetSection("Minio"));
+        services.Configure<EmailSettings>(configuration.GetSection("Email"));
 
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
         services.AddSingleton<IFileStorage, MinioFileStorage>();
+
+        // ---- Gửi email: "Smtp" gửi thật, còn lại ghi log (demo, không cần cấu hình SMTP) ----
+        var emailProvider = configuration["Email:Provider"] ?? "Log";
+        if (string.Equals(emailProvider, "Smtp", StringComparison.OrdinalIgnoreCase))
+            services.AddScoped<IEmailSender, SmtpEmailSender>();
+        else
+            services.AddSingleton<IEmailSender, LogEmailSender>();
 
         return services;
     }

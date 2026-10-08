@@ -11,10 +11,12 @@ public class UserService : IUserService
 {
     private readonly IAppDbContext _db;
     private readonly IPasswordHasher _hasher;
-    public UserService(IAppDbContext db, IPasswordHasher hasher)
+    private readonly IAuditLogger _audit;
+    public UserService(IAppDbContext db, IPasswordHasher hasher, IAuditLogger audit)
     {
         _db = db;
         _hasher = hasher;
+        _audit = audit;
     }
 
     public async Task<PagedResult<UserDto>> GetAllAsync(PaginationQuery query, string? role, string? keyword)
@@ -74,6 +76,8 @@ public class UserService : IUserService
         };
         _db.Users.Add(user);
         await _db.SaveChangesAsync();
+        await _audit.LogAsync("Create", nameof(User), user.Id, $"Tạo người dùng {user.Email} (vai trò {role}).");
+        await _db.SaveChangesAsync();
         return AuthService.ToDto(user);
     }
 
@@ -93,6 +97,7 @@ public class UserService : IUserService
         user.Nationality = dto.Nationality; user.EmergencyContactName = dto.EmergencyContactName;
         user.EmergencyContactPhone = dto.EmergencyContactPhone;
         user.IdIssueDate = dto.IdIssueDate; user.IdIssuePlace = dto.IdIssuePlace;
+        await _audit.LogAsync("Update", nameof(User), user.Id, $"Cập nhật người dùng {user.Email} (vai trò {role}).");
         await _db.SaveChangesAsync();
         return AuthService.ToDto(user);
     }
@@ -102,6 +107,8 @@ public class UserService : IUserService
         var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == id)
             ?? throw AppException.NotFound("Không tìm thấy người dùng.");
         user.IsActive = isActive;
+        await _audit.LogAsync("SetActive", nameof(User), user.Id,
+            $"{(isActive ? "Kích hoạt" : "Vô hiệu hoá")} tài khoản {user.Email}.");
         await _db.SaveChangesAsync();
     }
 }

@@ -9,6 +9,8 @@ public interface IAppDbContext
 {
     DbSet<User> Users { get; }
     DbSet<RefreshToken> RefreshTokens { get; }
+    DbSet<UserToken> UserTokens { get; }
+    DbSet<AuditLog> AuditLogs { get; }
     DbSet<Notification> Notifications { get; }
 
     DbSet<Building> Buildings { get; }

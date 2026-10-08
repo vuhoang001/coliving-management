@@ -153,3 +153,10 @@ public enum NotificationType
     Amenity = 5,
     Service = 6
 }
+
+/// <summary>Mục đích của token dùng một lần gửi cho người dùng.</summary>
+public enum UserTokenPurpose
+{
+    EmailConfirm = 0,   // Xác nhận địa chỉ email
+    PasswordReset = 1   // Đặt lại mật khẩu
+}

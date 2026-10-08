@@ -2,10 +2,12 @@ using Coliving.Application.DTOs;
 using Coliving.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Coliving.API.Controllers;
 
 [Authorize]
+[EnableRateLimiting("payment")]
 public class PaymentsController : BaseApiController
 {
     private readonly IPaymentService _service;

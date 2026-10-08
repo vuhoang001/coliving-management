@@ -74,6 +74,17 @@ coliving-management/
 └─ .env.example
 ```
 
+## Tính năng kỹ thuật bổ sung
+
+- **Kiểm thử:** `backend/tests/Coliving.Tests` (xUnit + SQLite in-memory) — chạy `cd backend && dotnet test` (17 test, phủ hashing, auth, quên/đặt lại mật khẩu, chia tiền hoá đơn).
+- **CI:** `.github/workflows/ci.yml` tự build + test backend và build frontend mỗi push/PR.
+- **Sao lưu/di chuyển:** `./scripts/export-data.sh` và `./scripts/import-data.sh` (Postgres + ảnh MinIO).
+- **Bảo mật:** rate limiting cho endpoint auth (10/phút) và payment (20/phút).
+- **Email:** quên/đặt lại mật khẩu (`/forgot-password`, `/reset-password`); mặc định ghi log (demo), đổi `EMAIL_PROVIDER=Smtp` để gửi thật.
+- **Nhật ký thao tác:** màn hình *Nhật ký* cho Manager/Admin (AuditLogs).
+- **Dịch vụ nền:** tự đánh dấu hoá đơn quá hạn và nhắc khách thuê (mỗi 30 phút).
+- Tài liệu kỹ thuật tổng quan: `docs/TONG_QUAN_DU_AN.md`.
+
 ## Ghi chú
 
 - VNPay chạy ở **chế độ mock** khi chưa cấu hình `VNPAY_TMNCODE`/`HASHSECRET` thật.

@@ -54,6 +54,8 @@ async function submit() {
         <Button type="submit" label="Đăng nhập" :loading="loading" class="w-full mt-2" />
       </form>
 
+      <p class="text-center mt-2"><router-link to="/forgot-password" class="link">Quên mật khẩu?</router-link></p>
+
       <div class="hints">
         <p class="hints-title">Tài khoản mẫu (bấm để điền)</p>
         <button v-for="h in hints" :key="h.email" class="hint" @click="useHint(h)">

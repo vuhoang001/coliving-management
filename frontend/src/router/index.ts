@@ -4,6 +4,8 @@ import { useAuthStore } from '@/stores/auth'
 const routes = [
   { path: '/login', name: 'login', component: () => import('@/views/LoginView.vue'), meta: { public: true } },
   { path: '/register', name: 'register', component: () => import('@/views/RegisterView.vue'), meta: { public: true } },
+  { path: '/forgot-password', name: 'forgot-password', component: () => import('@/views/ForgotPasswordView.vue'), meta: { public: true } },
+  { path: '/reset-password', name: 'reset-password', component: () => import('@/views/ResetPasswordView.vue'), meta: { public: true } },
   { path: '/payment/result', name: 'payment-result', component: () => import('@/views/PaymentResultView.vue'), meta: { public: true } },
   { path: '/payment/mock', name: 'payment-mock', component: () => import('@/views/PaymentMockView.vue') },
   {
@@ -25,6 +27,7 @@ const routes = [
       { path: 'invoices', name: 'invoices', component: () => import('@/views/InvoicesView.vue'), meta: { staff: true } },
       { path: 'amenities-admin', name: 'amenities-admin', component: () => import('@/views/AmenitiesAdminView.vue'), meta: { staff: true } },
       { path: 'users', name: 'users', component: () => import('@/views/UsersView.vue'), meta: { manager: true } },
+      { path: 'audit-logs', name: 'audit-logs', component: () => import('@/views/AuditLogView.vue'), meta: { manager: true } },
 
       // ----- Khu khách thuê (Tenant) -----
       { path: 'home', name: 'tenant-home', component: () => import('@/views/tenant/AvailableRoomsView.vue') },

@@ -2,7 +2,6 @@ services:
   db:
     image: postgres:16-alpine
     container_name: coliving-db
-    restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -21,7 +20,6 @@ services:
   minio:
     image: minio/minio:latest
     container_name: coliving-minio
-    restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: "${MINIO_USER:-minioadmin}"
@@ -41,7 +39,6 @@ services:
     build:
       context: ./backend
     container_name: coliving-api
-    restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
@@ -71,6 +68,16 @@ services:
       VnPay__MockUrl: "http://localhost:5175/payment/mock"
       VnPay__Version: "2.1.0"
       VnPay__Locale: "vn"
+      # Email: mặc định "Log" (ghi console, không cần SMTP). Đổi EMAIL_PROVIDER=Smtp + điền SMTP_* để gửi thật.
+      Email__Provider: "${EMAIL_PROVIDER:-Log}"
+      Email__FromName: "Coliving"
+      Email__FromEmail: "${EMAIL_FROM:-no-reply@coliving.local}"
+      Email__Host: "${SMTP_HOST:-}"
+      Email__Port: "${SMTP_PORT:-587}"
+      Email__Username: "${SMTP_USER:-}"
+      Email__Password: "${SMTP_PASS:-}"
+      Email__EnableSsl: "${SMTP_SSL:-true}"
+      Email__AppBaseUrl: "${APP_BASE_URL:-http://localhost:5175}"
     ports:
       - "8082:8080"
 
@@ -78,7 +85,6 @@ services:
     build:
       context: ./frontend
     container_name: coliving-web
-    restart: unless-stopped
     depends_on:
       - api
     ports:

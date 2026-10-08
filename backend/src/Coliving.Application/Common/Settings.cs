@@ -55,3 +55,19 @@ public class SeedAccount
     public string FullName { get; set; } = "Quản trị hệ thống";
     public string? Phone { get; set; }
 }
+
+/// <summary>Cấu hình gửi email. Provider=Log ghi ra console (demo), Smtp gửi thật.</summary>
+public class EmailSettings
+{
+    /// <summary>"Log" (mặc định, ghi console) hoặc "Smtp".</summary>
+    public string Provider { get; set; } = "Log";
+    public string FromName { get; set; } = "Coliving";
+    public string FromEmail { get; set; } = "no-reply@coliving.local";
+    public string Host { get; set; } = default!;
+    public int Port { get; set; } = 587;
+    public string? Username { get; set; }
+    public string? Password { get; set; }
+    public bool EnableSsl { get; set; } = true;
+    /// <summary>URL frontend để dựng link trong email (đặt lại mật khẩu, xác nhận...).</summary>
+    public string AppBaseUrl { get; set; } = "http://localhost:5175";
+}

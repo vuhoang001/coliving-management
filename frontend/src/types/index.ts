@@ -411,3 +411,14 @@ export interface OccupancyReport {
   buildings: OccupancyBuilding[]
   overallRate: number
 }
+
+export interface AuditLog {
+  id: number
+  userId?: number | null
+  userEmail?: string | null
+  action: string
+  entityType: string
+  entityId?: number | null
+  detail?: string | null
+  createdAt: string
+}

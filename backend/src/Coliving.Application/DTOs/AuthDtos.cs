@@ -75,6 +75,17 @@ public record ChangePasswordDto
     [Required, MinLength(6)] public string NewPassword { get; init; } = default!;
 }
 
+public record ForgotPasswordDto
+{
+    [Required, EmailAddress] public string Email { get; init; } = default!;
+}
+
+public record ResetPasswordDto
+{
+    [Required] public string Token { get; init; } = default!;
+    [Required, MinLength(6)] public string NewPassword { get; init; } = default!;
+}
+
 public record CreateUserDto
 {
     [Required, EmailAddress] public string Email { get; init; } = default!;

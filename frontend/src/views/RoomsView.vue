@@ -43,7 +43,7 @@ const saving = ref(false)
 const uploading = ref(false)
 
 interface Form {
-  id?: number; apartmentId?: number; name: string; code?: string; type?: string
+  id?: number; apartmentId?: number; code: string; type?: string
   area?: number; capacity?: number; price: number; status: string; description?: string; photoUrl?: string
   deposit?: number; hasWindow?: boolean; hasPrivateBathroom?: boolean; hasAirConditioner?: boolean
   electricityUnitPrice?: number; waterUnitPrice?: number; internetFee?: number; notes?: string
@@ -51,7 +51,7 @@ interface Form {
 const form = ref<Form>(blank())
 function blank(): Form {
   return {
-    name: '', code: '', type: 'Single', area: undefined, capacity: 1, price: 0, status: 'Available', description: '', photoUrl: '',
+    code: '', type: 'Single', area: undefined, capacity: 1, price: 0, status: 'Available', description: '', photoUrl: '',
     deposit: 0, hasWindow: true, hasPrivateBathroom: false, hasAirConditioner: true,
     electricityUnitPrice: 3500, waterUnitPrice: 15000, internetFee: 100000, notes: ''
   }
@@ -78,7 +78,7 @@ function applyFilter() { page.value = 1; load() }
 function openNew() { form.value = blank(); showDialog.value = true }
 function openEdit(r: Room) {
   form.value = {
-    id: r.id, apartmentId: r.apartmentId, name: r.name, code: r.code, type: r.type, area: r.area,
+    id: r.id, apartmentId: r.apartmentId, code: r.code ?? r.name, type: r.type, area: r.area,
     capacity: r.capacity, price: r.price, status: r.status, description: r.description, photoUrl: r.photoUrl,
     deposit: r.deposit ?? 0, hasWindow: r.hasWindow ?? true, hasPrivateBathroom: r.hasPrivateBathroom ?? false,
     hasAirConditioner: r.hasAirConditioner ?? true, electricityUnitPrice: r.electricityUnitPrice ?? 3500,
@@ -95,10 +95,10 @@ async function onUpload(e: { files: File | File[] }) {
   finally { uploading.value = false }
 }
 async function save() {
-  if (!form.value.name.trim() || !form.value.apartmentId) { toast.add({ severity: 'warn', summary: 'Nhập tên & chọn căn hộ', life: 2500 }); return }
+  if (!form.value.code.trim() || !form.value.apartmentId) { toast.add({ severity: 'warn', summary: 'Nhập mã phòng & chọn căn hộ', life: 2500 }); return }
   saving.value = true
   try {
-    const payload = { ...form.value, name: form.value.name.trim() } as any
+    const payload = { ...form.value, code: form.value.code.trim() } as any
     if (form.value.id) await roomApi.update(form.value.id, payload)
     else await roomApi.create(payload)
     showDialog.value = false; await load()
@@ -112,7 +112,7 @@ async function changeStatus(r: Room, value: string) {
 }
 function remove(r: Room) {
   confirm.require({
-    message: `Xóa phòng "${r.name}"?`, header: 'Xác nhận', icon: 'pi pi-exclamation-triangle',
+    message: `Xóa phòng "${r.code ?? r.name}"?`, header: 'Xác nhận', icon: 'pi pi-exclamation-triangle',
     rejectLabel: 'Hủy', acceptLabel: 'Xóa', acceptClass: 'p-button-danger',
     accept: async () => {
       try { await roomApi.remove(r.id); await load(); toast.add({ severity: 'success', summary: 'Đã xóa', life: 2000 }) }
@@ -133,7 +133,7 @@ onMounted(async () => { await loadRefs(); await load() })
     <Select v-model="fBuilding" :options="buildings" optionLabel="name" optionValue="id" placeholder="Toà nhà" showClear class="flt" @change="applyFilter" />
     <Select v-model="fStatus" :options="statusOptions" optionLabel="label" optionValue="value" placeholder="Trạng thái" showClear class="flt" @change="applyFilter" />
     <span class="p-input-icon-left search">
-      <InputText v-model="fKeyword" placeholder="Tìm tên/mã phòng" @keyup.enter="applyFilter" />
+      <InputText v-model="fKeyword" placeholder="Tìm mã phòng / căn hộ" @keyup.enter="applyFilter" />
     </span>
     <Button label="Lọc" icon="pi pi-search" size="small" @click="applyFilter" />
   </div>
@@ -143,7 +143,7 @@ onMounted(async () => { await loadRefs(); await load() })
     <Column header="Ảnh" style="width: 70px">
       <template #body="{ data }"><img :src="data.photoUrl || 'https://placehold.co/48?text=P'" class="thumb" alt="" /></template>
     </Column>
-    <Column field="name" header="Phòng" />
+    <Column field="code" header="Phòng" />
     <Column field="buildingName" header="Toà nhà" />
     <Column field="apartmentName" header="Căn hộ" />
     <Column header="Loại" style="width: 90px"><template #body="{ data }">{{ label(roomTypeLabel, data.type) }}</template></Column>
@@ -165,8 +165,7 @@ onMounted(async () => { await loadRefs(); await load() })
   <Dialog v-model:visible="showDialog" :header="form.id ? 'Sửa phòng' : 'Thêm phòng'" modal style="width: 620px">
     <div class="form grid2">
       <div><label>Căn hộ</label><Select v-model="form.apartmentId" :options="apartments" optionLabel="name" optionValue="id" placeholder="Chọn căn hộ" class="w-full" filter /></div>
-      <div><label>Tên phòng</label><InputText v-model="form.name" class="w-full" /></div>
-      <div><label>Mã phòng</label><InputText v-model="form.code" class="w-full" /></div>
+      <div><label>Mã phòng</label><InputText v-model="form.code" class="w-full" placeholder="vd A-12A-R1" /></div>
       <div><label>Loại</label><Select v-model="form.type" :options="typeOptions" optionLabel="label" optionValue="value" class="w-full" /></div>
       <div><label>Diện tích (m²)</label><InputNumber v-model="form.area" :min="0" class="w-full" inputClass="w-full" /></div>
       <div><label>Sức chứa</label><InputNumber v-model="form.capacity" :min="1" class="w-full" inputClass="w-full" /></div>

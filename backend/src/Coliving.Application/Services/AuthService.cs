@@ -16,13 +16,18 @@ public class AuthService : IAuthService
     private readonly IPasswordHasher _hasher;
     private readonly IJwtTokenGenerator _jwt;
     private readonly JwtSettings _jwtSettings;
+    private readonly IEmailSender _email;
+    private readonly EmailSettings _emailSettings;
 
-    public AuthService(IAppDbContext db, IPasswordHasher hasher, IJwtTokenGenerator jwt, IOptions<JwtSettings> jwtSettings)
+    public AuthService(IAppDbContext db, IPasswordHasher hasher, IJwtTokenGenerator jwt,
+        IOptions<JwtSettings> jwtSettings, IEmailSender email, IOptions<EmailSettings> emailSettings)
     {
         _db = db;
         _hasher = hasher;
         _jwt = jwt;
         _jwtSettings = jwtSettings.Value;
+        _email = email;
+        _emailSettings = emailSettings.Value;
     }
 
     public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto)
@@ -123,6 +128,70 @@ public class AuthService : IAuthService
             await _db.SaveChangesAsync();
         }
     }
+
+    public async Task ForgotPasswordAsync(string email)
+    {
+        email = email.Trim().ToLowerInvariant();
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email);
+        // Không tiết lộ email có tồn tại hay không (chống dò tài khoản).
+        if (user is null) return;
+
+        var raw = await CreateUserTokenAsync(user.Id, UserTokenPurpose.PasswordReset, TimeSpan.FromHours(1));
+        var link = $"{_emailSettings.AppBaseUrl}/reset-password?token={raw}";
+        await _email.SendAsync(user.Email, "Đặt lại mật khẩu Coliving", BuildResetEmail(user.FullName, link));
+    }
+
+    public async Task ResetPasswordAsync(string token, string newPassword)
+    {
+        var stored = await FindUsableTokenAsync(token, UserTokenPurpose.PasswordReset)
+            ?? throw new AppException("Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.");
+
+        stored.UsedAt = DateTime.UtcNow;
+        stored.User.PasswordHash = _hasher.Hash(newPassword);
+
+        // Thu hồi mọi refresh token cũ để buộc đăng nhập lại.
+        var tokens = await _db.RefreshTokens.Where(t => t.UserId == stored.UserId && t.RevokedAt == null).ToListAsync();
+        foreach (var t in tokens) t.RevokedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+    }
+
+    private async Task<string> CreateUserTokenAsync(int userId, UserTokenPurpose purpose, TimeSpan lifetime)
+    {
+        var raw = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+        _db.UserTokens.Add(new UserToken
+        {
+            UserId = userId,
+            Purpose = purpose,
+            TokenHash = HashToken(raw),
+            ExpiresAt = DateTime.UtcNow.Add(lifetime)
+        });
+        await _db.SaveChangesAsync();
+        return raw;
+    }
+
+    private async Task<UserToken?> FindUsableTokenAsync(string rawToken, UserTokenPurpose purpose)
+    {
+        var hash = HashToken(rawToken);
+        var stored = await _db.UserTokens.Include(t => t.User)
+            .FirstOrDefaultAsync(t => t.TokenHash == hash && t.Purpose == purpose);
+        return stored is { IsUsable: true } ? stored : null;
+    }
+
+    private static string BuildResetEmail(string name, string link) => $@"
+<div style='font-family:Arial,sans-serif;max-width:560px;margin:auto;color:#242424'>
+  <div style='background:#2563eb;color:#fff;padding:24px;border-radius:10px 10px 0 0;text-align:center'>
+    <h2 style='margin:0'>🏢 Coliving</h2>
+  </div>
+  <div style='border:1px solid #eee;border-top:none;padding:24px;border-radius:0 0 10px 10px'>
+    <p>Xin chào <b>{name}</b>,</p>
+    <p>Chúng tôi nhận được yêu cầu đặt lại mật khẩu. Nhấn nút dưới đây (liên kết hết hạn sau 1 giờ):</p>
+    <div style='text-align:center;margin:24px 0'>
+      <a href='{link}' style='background:#2563eb;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:700;display:inline-block'>Đặt lại mật khẩu</a>
+    </div>
+    <p style='color:#777'>Nếu bạn không yêu cầu, hãy bỏ qua email này.</p>
+    <p style='color:#999;font-size:12px'>Email tự động từ hệ thống Coliving — đồ án môn học.</p>
+  </div>
+</div>";
 
     private async Task<AuthResponseDto> BuildAuthResponse(User user)
     {

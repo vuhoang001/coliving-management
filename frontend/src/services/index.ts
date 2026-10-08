@@ -2,8 +2,40 @@ import api from './api'
 import type {
   AuthResponse, User, PagedResult, Building, Apartment, Room, Asset, ServiceCatalog,
   Amenity, AmenityBooking, Booking, Contract, CheckRecord, Incident, ServiceRequest,
-  Invoice, PaymentResult, NotificationList, DashboardStats, RevenueReport, OccupancyReport
+  Invoice, PaymentResult, NotificationList, DashboardStats, RevenueReport, OccupancyReport,
+  AuditLog
 } from '@/types'
+
+// ---------- Field mapping: API DTO <-> frontend convention ----------
+// Backend sends code/monthlyPrice/imageUrl/apartmentCode; the frontend types use
+// name/price/photoUrl/apartmentName. These mappers bridge the two in one place so
+// every view (rooms list, available rooms, booking/invoice dropdowns, apartments)
+// shows full data and saves correctly.
+function mapRoom(r: any): Room {
+  return {
+    ...r,
+    name: r.name ?? r.code,
+    apartmentName: r.apartmentName ?? r.apartmentCode,
+    price: r.price ?? r.monthlyPrice,
+    photoUrl: r.photoUrl ?? r.imageUrl
+  }
+}
+function toRoomPayload(d: any): any {
+  const { name, price, photoUrl, apartmentName, buildingName, buildingId, id, currentOccupants, ...rest } = d
+  return {
+    ...rest,
+    code: (d.code ?? name)?.toString().trim(),
+    monthlyPrice: price ?? d.monthlyPrice,
+    imageUrl: photoUrl ?? d.imageUrl
+  }
+}
+function mapApartment(a: any): Apartment {
+  return { ...a, name: a.name ?? a.code }
+}
+function toApartmentPayload(d: any): any {
+  const { name, buildingName, roomCount, id, ...rest } = d
+  return { ...rest, code: (d.code ?? name)?.toString().trim() }
+}
 
 // ---------- Auth ----------
 export const authApi = {
@@ -18,7 +50,10 @@ export const authApi = {
   updateProfile: (data: { fullName: string; phone?: string; avatarUrl?: string }) =>
     api.put<User>('/auth/profile', data).then((r) => r.data),
   changePassword: (data: { currentPassword: string; newPassword: string }) =>
-    api.post('/auth/change-password', data)
+    api.post('/auth/change-password', data),
+  forgotPassword: (email: string) => api.post('/auth/forgot-password', { email }),
+  resetPassword: (token: string, newPassword: string) =>
+    api.post('/auth/reset-password', { token, newPassword })
 }
 
 // ---------- Users (Manager, Admin) ----------
@@ -43,10 +78,10 @@ export const buildingApi = {
 
 // ---------- Apartments ----------
 export const apartmentApi = {
-  list: (buildingId?: number) => api.get<Apartment[]>('/apartments', { params: { buildingId } }).then((r) => r.data),
-  byId: (id: number) => api.get<Apartment>(`/apartments/${id}`).then((r) => r.data),
-  create: (data: Partial<Apartment>) => api.post<Apartment>('/apartments', data).then((r) => r.data),
-  update: (id: number, data: Partial<Apartment>) => api.put<Apartment>(`/apartments/${id}`, data).then((r) => r.data),
+  list: (buildingId?: number) => api.get<Apartment[]>('/apartments', { params: { buildingId } }).then((r) => r.data.map(mapApartment)),
+  byId: (id: number) => api.get<Apartment>(`/apartments/${id}`).then((r) => mapApartment(r.data)),
+  create: (data: Partial<Apartment>) => api.post<Apartment>('/apartments', toApartmentPayload(data)).then((r) => mapApartment(r.data)),
+  update: (id: number, data: Partial<Apartment>) => api.put<Apartment>(`/apartments/${id}`, toApartmentPayload(data)).then((r) => mapApartment(r.data)),
   remove: (id: number) => api.delete(`/apartments/${id}`)
 }
 
@@ -56,14 +91,14 @@ export interface RoomFilter {
   type?: string; status?: string; minPrice?: number; maxPrice?: number; keyword?: string
 }
 export const roomApi = {
-  list: (f: RoomFilter) => api.get<PagedResult<Room>>('/rooms', { params: f }).then((r) => r.data),
+  list: (f: RoomFilter) => api.get<PagedResult<Room>>('/rooms', { params: f }).then((r) => ({ ...r.data, items: r.data.items.map(mapRoom) })),
   available: (from?: string, to?: string) =>
-    api.get<Room[]>('/rooms/available', { params: { from, to } }).then((r) => r.data),
-  byId: (id: number) => api.get<Room>(`/rooms/${id}`).then((r) => r.data),
-  create: (data: Partial<Room>) => api.post<Room>('/rooms', data).then((r) => r.data),
-  update: (id: number, data: Partial<Room>) => api.put<Room>(`/rooms/${id}`, data).then((r) => r.data),
+    api.get<Room[]>('/rooms/available', { params: { from, to } }).then((r) => r.data.map(mapRoom)),
+  byId: (id: number) => api.get<Room>(`/rooms/${id}`).then((r) => mapRoom(r.data)),
+  create: (data: Partial<Room>) => api.post<Room>('/rooms', toRoomPayload(data)).then((r) => mapRoom(r.data)),
+  update: (id: number, data: Partial<Room>) => api.put<Room>(`/rooms/${id}`, toRoomPayload(data)).then((r) => mapRoom(r.data)),
   setStatus: (id: number, value: string) =>
-    api.put<Room>(`/rooms/${id}/status`, null, { params: { value } }).then((r) => r.data),
+    api.put<Room>(`/rooms/${id}/status`, null, { params: { value } }).then((r) => mapRoom(r.data)),
   remove: (id: number) => api.delete(`/rooms/${id}`)
 }
 
@@ -202,6 +237,12 @@ export const dashboardApi = {
   stats: () => api.get<DashboardStats>('/dashboard/stats').then((r) => r.data),
   revenue: (months = 6) => api.get<RevenueReport>('/dashboard/revenue', { params: { months } }).then((r) => r.data),
   occupancy: () => api.get<OccupancyReport>('/dashboard/occupancy').then((r) => r.data)
+}
+
+// ---------- Audit logs (Manager, Admin) ----------
+export const auditApi = {
+  list: (page = 1, pageSize = 20) =>
+    api.get<PagedResult<AuditLog>>('/audit-logs', { params: { page, pageSize } }).then((r) => r.data)
 }
 
 // ---------- Uploads ----------

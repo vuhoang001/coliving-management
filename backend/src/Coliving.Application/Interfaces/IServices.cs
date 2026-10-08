@@ -12,6 +12,16 @@ public interface IAuthService
     Task ChangePasswordAsync(int userId, ChangePasswordDto dto);
     Task<AuthResponseDto> RefreshAsync(string refreshToken);
     Task LogoutAsync(string? refreshToken);
+    /// <summary>Gửi email kèm liên kết đặt lại mật khẩu (không tiết lộ email có tồn tại hay không).</summary>
+    Task ForgotPasswordAsync(string email);
+    /// <summary>Đặt lại mật khẩu bằng token một lần; thu hồi mọi refresh token cũ.</summary>
+    Task ResetPasswordAsync(string token, string newPassword);
+}
+
+/// <summary>Ghi nhật ký thao tác quan trọng (được lưu cùng SaveChanges của caller).</summary>
+public interface IAuditLogger
+{
+    Task LogAsync(string action, string entityType, int? entityId = null, string? detail = null);
 }
 
 /// <summary>Quản lý người dùng (khách thuê / nhân viên) — dành cho quản lý.</summary>

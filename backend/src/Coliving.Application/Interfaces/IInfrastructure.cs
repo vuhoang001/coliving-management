@@ -36,3 +36,9 @@ public interface IRealtimeNotifier
 {
     Task PushAsync(int userId, NotificationDto notification);
 }
+
+/// <summary>Gửi email (SMTP thật hoặc ghi log khi demo). Chọn hiện thực theo cấu hình Email:Provider.</summary>
+public interface IEmailSender
+{
+    Task SendAsync(string toEmail, string subject, string htmlBody);
+}

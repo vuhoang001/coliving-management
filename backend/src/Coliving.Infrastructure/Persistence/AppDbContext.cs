@@ -13,6 +13,8 @@ public class AppDbContext : DbContext, IAppDbContext
 
     public DbSet<User> Users => Set<User>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<UserToken> UserTokens => Set<UserToken>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<Notification> Notifications => Set<Notification>();
 
     public DbSet<Building> Buildings => Set<Building>();
